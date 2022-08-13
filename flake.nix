@@ -1,8 +1,11 @@
 {
-  description = "NixOS configurations";
+  description = "Minecraft server in Nix";
 
-  inputs = { };
+  inputs.nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
 
-  outputs = { self }:
-    { };
+  outputs = { self, nixpkgs }:
+    {
+      nixosModules.mineflake = import ./modules/mineflake.nix;
+      nixosModule = self.nixosModules.mineflake;
+    };
 }
