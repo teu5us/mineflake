@@ -3,18 +3,38 @@
 with lib; let
   cfg = config.minecraft;
 
-  mkConfigDerivation = name: server-name: option: (
-    # TODO: Add different config types handling
-    pkgs.stdenv.mkDerivation {
+  mkConfigDerivation = name: server-name: option: let 
+    default = {
       pname = "minecraft-config-${name}";
       version = server-name;
       phases = [ "installPhase" ];
-      installPhase = ''
-        cat <<EOF > $out
-        ${builtins.toJSON option.data}
-        EOF
-      '';
-    }
+    };
+  in (
+    # yaml compatible with json format
+    if option.type == "yaml" || option.type == "json" then
+      pkgs.stdenv.mkDerivation (default // {
+        installPhase = ''
+          cat <<EOF > $out
+          ${builtins.toJSON option.data}
+          EOF
+        '';
+      })
+    else if option.type == "raw" then
+      pkgs.stdenv.mkDerivation (default // {
+        installPhase = ''
+          cat <<EOF > $out
+          ${option.data.raw}
+          EOF
+        '';
+      })
+    else
+      pkgs.stdenv.mkDerivation (default // {
+        installPhase = ''
+          cat <<EOF > $out
+          none
+          EOF
+        '';
+      })
   );
 
   mkConfigs = server: server-name:
@@ -33,7 +53,7 @@ with lib; let
     ({ ... }: {
       options = {
         type = mkOption {
-          type = types.enum [ "yaml" ];
+          type = types.enum [ "yaml" "json" "raw" ];
           default = "yaml";
           description = "Config type.";
         };
