@@ -76,10 +76,13 @@ in
       (builtins.map
         (server:
           {
-            name = "minecraft-prepare-${server.name}";
+            name = "minecraft-${server.name}";
             value = {
-              description = "Prepare for ${server.name} Minecraft server start.";
-              restartIfChanged = true;
+              description = "Launch \"${server.name}\" Minecraft server.";
+              wants = [ "network-online.target" ];
+              after = [ "network-online.target" ];
+              wantedBy = [ "multi-user.target" ];
+              reloadIfChanged = true;
               serviceConfig = {
                 Type = "oneshot";
                 RemainAfterExit = "yes";
@@ -104,31 +107,12 @@ in
                   plugin:
                     ''ln -sf ${plugin}/result "${server.datadir}/plugins/${plugin.pname}-${plugin.version}-${plugin.hash}.jar"'' + "\n"
                   ) server.plugins)}
+
+                # Launch
+                ${server.jre}/bin/java -jar ${server.package}/result ${builtins.toString (builtins.map (x: "\""+x+"\"") server.opts)}
               '';
             };
           })
-        cfg.servers) //
-    builtins.listToAttrs (builtins.map
-      (server:
-        {
-          name = "minecraft-${server.name}";
-          value = {
-            description = "Launch ${server.name} Minecraft server.";
-            wants = [ "minecraft-prepare-${server.name}.service" "network-online.target" ];
-            after = [ "minecraft-prepare-${server.name}.service" "network-online.target" ];
-            wantedBy = [ "multi-user.target" ];
-            reloadIfChanged = true;
-            serviceConfig = {
-              Type = "simple";
-              SyslogIdentifier = "minecraft-${server.name}";
-              WorkingDirectory = server.datadir;
-            };
-            script = ''
-              # Launch
-              ${server.jre}/bin/java -jar ${server.package}/result ${builtins.toString (builtins.map (x: "\""+x+"\"") server.opts)}
-            '';
-          };
-        })
-      cfg.servers);
+        cfg.servers);
   };
 }
