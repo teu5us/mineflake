@@ -7,4 +7,5 @@ with pkgs; {
   # Plugins
   # TODO: add to plugins default config declarations
   luckperms = callPackage ./luckperms { };
+  coreprotect = callPackage ./coreprotect { };
 }
