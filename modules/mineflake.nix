@@ -3,11 +3,11 @@
 with lib; let
   cfg = config.minecraft;
 
-  mkConfigDerivation = server-name: option: (
+  mkConfigDerivation = name: server-name: option: (
     # TODO: Add different config types handling
     pkgs.stdenv.mkDerivation {
-      pname = "minecraft-${server-name}-server-${option.type}-config";
-      version = "1";
+      pname = "minecraft-config-${name}";
+      version = server-name;
       phases = [ "installPhase" ];
       installPhase = ''
         cat <<EOF > $out
@@ -17,7 +17,7 @@ with lib; let
     }
   );
 
-  mkConfigs = server: let ders = mapAttrs (_: option: mkConfigDerivation server.name option) server.configs; in (
+  mkConfigs = server: let ders = mapAttrs (name: option: mkConfigDerivation name server.name option) server.configs; in (
     toString (map (key: ''
       # Link "${key}" config file
       rm -f ${server.datadir}/${key}
