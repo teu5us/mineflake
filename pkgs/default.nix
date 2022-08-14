@@ -1,3 +1,0 @@
-{
-  spigot = import ./spigot;
-}

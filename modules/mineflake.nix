@@ -1,24 +1,7 @@
 { lib, pkgs, config, ... }:
 
 with lib; let
-  cfg = config.services.minecraft;
-
-  pluginSubmodule = types.submodule ({ ... }: {
-    options = {
-      name = mkOption {
-        type = types.str;
-        description = "Plugin name.";
-      };
-
-      package = mkOption {
-        type = types.package;
-        default = pkgs.tmux;
-        description = "Plugin package.";
-      };
-    };
-  }) // {
-    description = "Plugin submodule. Contains plugin package and it meta-info.";
-  };
+  cfg = config.minecraft;
 
   serverSubmodule = types.submodule ({ ... }: {
     options = {
@@ -27,8 +10,13 @@ with lib; let
         description = "Server name.";
       };
 
+      datadir = mkOption {
+        type = types.path;
+        description = "Server data directory.";
+      };
+
       plugins = mkOption {
-        type = types.listOf pluginSubmodule;
+        type = types.listOf types.package;
         description = "Plugins to install.";
       };
 
@@ -38,33 +26,17 @@ with lib; let
         example = "paper";
         description = "Server package.";
       };
-
-      useLocalIPFS = mkOption {
-        type = types.bool;
-        default = config.services.ipfs.enable;
-      };
-
-      localGateway = mkOption {
-        type = types.string;
-        default = "http://localhost:8080/ipfs/";
-      };
-
-      publicGateway = mkOption {
-        type = types.string;
-        default = "https://cloudflare-ipfs.com/ipfs/";
-      };
     };
   }) // {
     description = "Server submodule";
   }; in
 {
-  options.services.minecraft = {
+  options.minecraft = {
     enable = mkOption {
       type = types.bool;
       default = false;
       description = ''
-        If enabled, Nix-defined minecraft servers will be created from
-        services.minecraft.servers.
+        If enabled, Nix-defined minecraft servers will be created from minecraft.servers.
       '';
     };
 
@@ -79,10 +51,17 @@ with lib; let
   config = mkIf cfg.enable {
     systemd.services =  builtins.listToAttrs (builtins.map (server:
       {
-        name = "minecraft-${server.name}";
+        name = "minecraft-prepare-${server.name}";
         value = {
           description = "Launch ${server.name} Minecraft server.";
-          script = ''echo "hello world!"'';
+          script = ''
+            # Create required directories
+            mkdir -p ${server.datadir}
+            mkdir -p ${server.datadir}/plugins
+
+            # Link plugins
+          '' + builtins.toString (builtins.map
+              (plugin: "ln -sf ${plugin}/result ${server.datadir}/plugins/${plugin.pname}-${plugin.version}-${plugin.hash}.jar\n") server.plugins);
         };
       }) cfg.servers);
   };
