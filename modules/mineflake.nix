@@ -62,6 +62,8 @@ in
     };
 
     servers = mkOption {
+      # Unfortunately, we can't use attrsOf instead of listOf because we won't be able
+      # to convert name to something else afterwards, such as "main" to "minecraft-main.service".
       type = types.listOf serverSubmodule;
       description = ''
         List of server submodules to create.
