@@ -1,25 +1,33 @@
 { lib, pkgs, ... }:
 
 let
+  hash = "sha256-ZI9o+WXwtBVXE+hiDDZS8vufIArOdGtVkScq58DJsTg=";
+  url = "https://download.luckperms.net/1449/bukkit/loader/LuckPerms-Bukkit-5.4.41.jar";
+in
+pkgs.stdenv.mkDerivation {
+  inherit hash;
+
   pname = "LuckPerms";
   version = "5.4";
-  hash = "sha256-ZI9o+WXwtBVXE+hiDDZS8vufIArOdGtVkScq58DJsTg=";
   src = pkgs.fetchurl {
-    url = "https://download.luckperms.net/1449/bukkit/loader/LuckPerms-Bukkit-5.4.41.jar";
+    url = url;
     hash = hash;
   };
-in pkgs.stdenv.mkDerivation {
-  inherit pname version src hash;
 
   type = "result";
 
-  # Remove unpack phase
-  phases = [ "installPhase" ];
+  preferLocalBuild = true;
 
-  installPhase = "mkdir $out && cp $src $out/result";
+  dontUnpack = true;
+  dontConfigure = true;
+
+  installPhase = ''
+    mkdir $out
+    install -Dm444 $src $out/result
+  '';
 
   meta = with lib; {
-    description = "A permissions plugin for Minecraft servers.";
+    description = "A permissions plugin for Minecraft servers";
     longDescription = ''
       LuckPerms is a permissions plugin for Minecraft servers. It allows server admins to control what features
       players can use by creating groups and assigning permissions.
@@ -32,6 +40,7 @@ in pkgs.stdenv.mkDerivation {
         extensive - a plethora of customization options and settings which can be changed to suit your server.
         free - available for download and usage at no cost, and permissively licensed so it can remain free forever.
     '';
+    homepage = "https://luckperms.net/";
     license = licenses.mit;
     platforms = platforms.all;
   };
