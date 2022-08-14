@@ -1,0 +1,3 @@
+{
+  spigot = import ./spigot;
+}

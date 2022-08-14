@@ -38,6 +38,21 @@ with lib; let
         example = "paper";
         description = "Server package.";
       };
+
+      useLocalIPFS = mkOption {
+        type = types.bool;
+        default = config.services.ipfs.enable;
+      };
+
+      localGateway = mkOption {
+        type = types.string;
+        default = "http://localhost:8080/ipfs/";
+      };
+
+      publicGateway = mkOption {
+        type = types.string;
+        default = "https://cloudflare-ipfs.com/ipfs/";
+      };
     };
   }) // {
     description = "Server submodule";
