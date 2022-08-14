@@ -13,6 +13,7 @@ with lib; let
 
         datadir = mkOption {
           type = types.path;
+          # TODO: add default value based on ${name}
           description = "Server data directory.";
         };
 
