@@ -14,8 +14,6 @@ pkgs.stdenv.mkDerivation {
     hash = hash;
   };
 
-  type = "result";
-
   preferLocalBuild = true;
 
   dontUnpack = true;
@@ -32,6 +30,7 @@ pkgs.stdenv.mkDerivation {
     # TODO: find artistik license
     license = licenses.mit;
     platforms = platforms.all;
+    type = "result";
     # TODO: fill
     folders = [ ];
   };

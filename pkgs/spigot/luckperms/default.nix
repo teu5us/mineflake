@@ -14,8 +14,6 @@ pkgs.stdenv.mkDerivation {
     hash = hash;
   };
 
-  type = "result";
-
   preferLocalBuild = true;
 
   dontUnpack = true;
@@ -40,6 +38,7 @@ pkgs.stdenv.mkDerivation {
     homepage = "https://luckperms.net/";
     license = licenses.mit;
     platforms = platforms.all;
+    type = "result";
     folders = [
       "plugins/LuckPerms"
     ];
