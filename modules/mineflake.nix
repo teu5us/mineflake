@@ -219,15 +219,17 @@ in
                     data = server.permissions.users;
                   };
                 } else { }) //
-                ({ "plugins/bStats/config.yml" = {
+                ({
+                  "plugins/bStats/config.yml" = {
                     type = "yaml";
                     data = {
                       enabled = false;
                       serverUuid = "00000000-0000-0000-0000-000000000000";
                       logFailedRequests = false;
                     };
-                  }; }) //
-                  server.configs;
+                  };
+                }) //
+                server.configs;
               pre_plugins = server.plugins ++
                 (if server.permissions.enable then [ server.permissions.package ] else [ ]);
               # Add plugin depedencies to plugin list
