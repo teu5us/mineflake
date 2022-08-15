@@ -17,27 +17,28 @@ with lib; let
       if option.type == "yaml" || option.type == "json" then
         pkgs.stdenv.mkDerivation
           (default // {
+            # We use "bsHSCeMDDECFe1eo" string as a EOF marker, cause it harder to collision with
             buildPhase = ''
-              cat <<EOF > $out
+              cat <<bsHSCeMDDECFe1eo > $out
               ${builtins.toJSON option.data}
-              EOF
+              bsHSCeMDDECFe1eo
             '';
           })
       else if option.type == "raw" then
         pkgs.stdenv.mkDerivation
           (default // {
             buildPhase = ''
-              cat <<EOF > $out
+              cat <<bsHSCeMDDECFe1eo > $out
               ${option.data.raw}
-              EOF
+              bsHSCeMDDECFe1eo
             '';
           })
       else
         pkgs.stdenv.mkDerivation (default // {
           buildPhase = ''
-            cat <<EOF > $out
+            cat <<bsHSCeMDDECFe1eo > $out
             none
-            EOF
+            bsHSCeMDDECFe1eo
           '';
         })
     );
