@@ -49,7 +49,9 @@ with lib; let
         (key: ''
           # Link "${key}" config file
           rm -f ${server.datadir}/data/${key}
-          ln -sf ${getAttr key ders} ${server.datadir}/data/${key}
+          cp ${getAttr key ders} ${server.datadir}/data/${key}
+          # TODO: replace env variables in config
+          # substitute \$\{server.envfile\} \$\{server.datadir\}/data/\$\{ke0\y}
         '')
         (attrNames ders))
     );
