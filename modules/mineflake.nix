@@ -184,7 +184,11 @@ in
 
                   ${mkConfigs server name}
 
-                  # Launch ${server.package.pname} ${server.package.version}
+                  # Link server core for easier debug and local launch
+                  rm -f ${server.datadir}/data/server-*.jar
+                  ln -sf ${server.package} ${server.datadir}/data/server-${server.package.pname}-${server.package.version}-${server.package.hash}.jar
+
+                  # Launch ${server.package.pname} ${server.package.version} for ${name} server
                   ${server.jre}/bin/java -jar ${server.package} ${builtins.toString (builtins.map (x: "\""+x+"\"") server.opts)}
                 '';
               };
