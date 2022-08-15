@@ -71,7 +71,7 @@ with lib; let
   linkResult = package: base: ext:
     ''
       # Link ${package.pname}-${package.version} result
-      ln -sf ${package} "${base}/${package.pname}-${package.version}-${package.hash}${ext}"
+      ln -sf "${package}" "${base}/${package.pname}-${package.version}${ext}"
     '';
 
 
@@ -232,8 +232,12 @@ in
                   };
                 } else { } //
                   server.configs;
-              plugins = server.plugins ++
+              pre_plugins = server.plugins ++
                 (if server.permissions.enable then [ server.permissions.package ] else [ ]);
+              # Add plugin depedencies to plugin list
+              # TODO: add support for nested depedencies
+              plugins = unique (pre_plugins ++
+                (flatten (map (x: x.meta.deps) pre_plugins)));
             in
             {
               name = "minecraft-${name}";
@@ -275,18 +279,19 @@ in
 
                   ${toString (map (
                     plugin:
+                      if length plugin.meta.folders >= 1 then
                       ''
                         # Create directories for ${plugin.pname}-${plugin.version}
                         mkdir -p ${toString (map (folder: "\"" + server.datadir + "/data/" + folder + "\"") plugin.meta.folders)}
-                      ''
+                      '' else ""
                     ) plugins)}
 
                   ${toString (map (
                     plugin: if plugin.meta.type == "result" then
-                      linkSimple plugin server.datadir + "/data/plugins" ".jar"
+                      (linkResult plugin (server.datadir + "/data/plugins") ".jar")
                       else if plugin.meta.type == "complex" then
                       (linkComplex plugin (server.datadir + "/data")) +
-                      ''ln -sf "${plugin}/result" "${server.datadir}/data/plugins/${plugin.pname}-${plugin.version}-${plugin.hash}.jar"''
+                      ''ln -sf "${plugin}/result" "${server.datadir}/data/plugins/${plugin.pname}-${plugin.version}.jar"'' + "\n\n"
                       else "# Unsupported ${plugin.pname}-${plugin.version} plugin type ${plugin.meta.type}") plugins)}
 
                   ${mkConfigs server name configs}
@@ -296,7 +301,7 @@ in
 
                   # Link server core for easier debug and local launch
                   rm -f "${server.datadir}/data/server-*.jar"
-                  ln -sf "${server.package}/result" "${server.datadir}/data/server-${server.package.pname}-${server.package.version}-${server.package.hash}.jar"
+                  ln -sf "${server.package}/result" "${server.datadir}/data/server-${server.package.pname}-${server.package.version}.jar"
 
                   ${if (server.package.meta.type == "complex") then
                     linkComplex server.package (server.datadir + "/data")

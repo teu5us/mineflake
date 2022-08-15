@@ -42,6 +42,7 @@ pkgs.stdenv.mkDerivation {
     license = licenses.mit;
     platforms = platforms.all;
     type = "complex";
+    deps = [];
     struct = {
       # Libs mapping
       "plugins/LuckPerms/libs/asm-9.1.jar" = "libs/asm-9.1.jar";
