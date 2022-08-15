@@ -58,6 +58,11 @@ with lib; let
         (attrNames ders))
     );
 
+  mkConfig = type: data:
+    {
+      inherit type data;
+    };
+
   linkComplex = package: base:
     "echo 'Link ${package.pname}-${package.version} complex struct...'\n" +
     toString (
@@ -210,23 +215,14 @@ in
             let
               configs =
                 (if server.permissions.enable then {
-                  "plugins/LuckPerms/groups.yml" = {
-                    type = "yaml";
-                    data = server.permissions.groups;
-                  };
-                  "plugins/LuckPerms/users.yml" = {
-                    type = "yaml";
-                    data = server.permissions.users;
-                  };
+                  "plugins/LuckPerms/groups.yml" = mkConfig "yaml" server.permissions.groups;
+                  "plugins/LuckPerms/users.yml" = mkConfig "yaml" server.permissions.users;
                 } else { }) //
                 ({
-                  "plugins/bStats/config.yml" = {
-                    type = "yaml";
-                    data = {
-                      enabled = false;
-                      serverUuid = "00000000-0000-0000-0000-000000000000";
-                      logFailedRequests = false;
-                    };
+                  "plugins/bStats/config.yml" = mkConfig "yaml" {
+                    enabled = false;
+                    serverUuid = "00000000-0000-0000-0000-000000000000";
+                    logFailedRequests = false;
                   };
                 }) //
                 server.configs;
