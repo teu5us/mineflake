@@ -230,7 +230,7 @@ in
                 createHome = true;
                 isSystemUser = true;
                 home = server.datadir;
-                group = "minecraft-main";
+                group = "minecraft-${name}";
                 description = "System account that runs ${name} mineflake server configuration.";
               };
             })
