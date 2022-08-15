@@ -42,8 +42,8 @@ with lib; let
         })
     );
 
-  mkConfigs = server: server-name:
-    let ders = mapAttrs (name: option: mkConfigDerivation name server-name option) server.configs; in
+  mkConfigs = server: server-name: configs:
+    let ders = mapAttrs (name: option: mkConfigDerivation name server-name option) configs; in
     (
       toString (map
         (key: ''
@@ -55,6 +55,12 @@ with lib; let
         '')
         (attrNames ders))
     );
+
+  mkPermissionConfigs = permissions:
+    builtins.listToAttrs (map (node: {
+      name = node;
+      value = getAttr key permissions;
+    }) (attrNames permissions));
 
   configSubmodule = types.submodule
     ({ ... }: {
@@ -68,6 +74,52 @@ with lib; let
         data = mkOption {
           type = types.anything;
           description = "Config contents.";
+        };
+      };
+    }) // {
+    description = "Config submodule";
+  };
+
+  permissionNode = types.submodule
+    ({ ... }: {
+      options = {
+        server = mkOption {
+          type = types.nullOr types.str;
+          default = null;
+        };
+      };
+    }) // {
+    description = "Permission node context";
+  };
+
+  permissionGroup = types.attrsOf permissionNode;
+
+  permissionSubmodule = types.submodule
+    ({ ... }: {
+      options = {
+        enable = mkOption {
+          type = types.bool;
+          default = false;
+          description = ''
+            If enabled, Nix-defined minecraft servers will be created from minecraft.servers.
+          '';
+        };
+
+        groups = mkOption {
+          type = types.attrsOf permissionGroup;
+          default = {};
+        };
+
+        users = mkOption {
+          type = types.attrsOf permissionGroup;
+          default = {};
+        };
+
+        package = mkOption {
+          type = types.package;
+          default = pkgs.callPackage ../pkgs/spigot/luckperms { };
+          example = "pkgs.spigot.luckperms";
+          description = "Plugin package.";
         };
       };
     }) // {
@@ -93,6 +145,12 @@ with lib; let
           type = types.attrsOf configSubmodule;
           default = {};
           description = "Config derivations.";
+        };
+
+        permissions = mkOption {
+          type = permissionSubmodule;
+          default = {};
+          description = "Permissions (LP) settings.";
         };
 
         jre = mkOption {
@@ -146,7 +204,21 @@ in
         };
         obj = builtins.mapAttrs
           (name: server:
-            {
+            # TODO: add permissions.enable handling
+            let
+              configs = {
+                "plugins/LuckPerms/groups.yml" = {
+                  type = "yaml";
+                  data = server.permissions.groups;
+                };
+              } // {
+                "plugins/LuckPerms/users.yml" = {
+                  type = "yaml";
+                  data = server.permissions.users;
+                };
+              } // server.configs;
+              plugins = server.plugins;
+            in {
               name = "minecraft-${name}";
               value = {
                 restartIfChanged = true;
@@ -182,9 +254,9 @@ in
                         # Link plugin ${plugin.pname} ${plugin.version}
                         ln -sf ${plugin} "${server.datadir}/data/plugins/${plugin.pname}-${plugin.version}-${plugin.hash}.jar"
                       ''
-                    ) server.plugins)}
+                    ) plugins)}
 
-                  ${mkConfigs server name}
+                  ${mkConfigs server name configs}
 
                   # Link server core for easier debug and local launch
                   rm -f ${server.datadir}/data/server-*.jar
