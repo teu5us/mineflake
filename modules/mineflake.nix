@@ -57,10 +57,12 @@ with lib; let
     );
 
   mkPermissionConfigs = permissions:
-    builtins.listToAttrs (map (node: {
-      name = node;
-      value = getAttr key permissions;
-    }) (attrNames permissions));
+    builtins.listToAttrs (map
+      (node: {
+        name = node;
+        value = getAttr key permissions;
+      })
+      (attrNames permissions));
 
   configSubmodule = types.submodule
     ({ ... }: {
@@ -107,12 +109,12 @@ with lib; let
 
         groups = mkOption {
           type = types.attrsOf permissionGroup;
-          default = {};
+          default = { };
         };
 
         users = mkOption {
           type = types.attrsOf permissionGroup;
-          default = {};
+          default = { };
         };
 
         package = mkOption {
@@ -143,13 +145,13 @@ with lib; let
 
         configs = mkOption {
           type = types.attrsOf configSubmodule;
-          default = {};
+          default = { };
           description = "Config derivations.";
         };
 
         permissions = mkOption {
           type = permissionSubmodule;
-          default = {};
+          default = { };
           description = "Permissions (LP) settings.";
         };
 
@@ -218,7 +220,8 @@ in
                 };
               } // server.configs;
               plugins = server.plugins;
-            in {
+            in
+            {
               name = "minecraft-${name}";
               value = {
                 restartIfChanged = true;
@@ -274,7 +277,7 @@ in
               };
             })
           cfg.servers;
-          obj_prepare = builtins.mapAttrs
+        obj_prepare = builtins.mapAttrs
           (name: server:
             {
               name = "minecraft-${name}-prepare";
