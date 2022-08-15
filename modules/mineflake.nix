@@ -89,6 +89,7 @@ with lib; let
 
         configs = mkOption {
           type = types.attrsOf configSubmodule;
+          default = {};
           description = "Config derivations.";
         };
 
@@ -177,14 +178,14 @@ in
                     plugin:
                       ''
                         # Link plugin ${plugin.pname} ${plugin.version}
-                        ln -sf ${plugin}/result "${server.datadir}/data/plugins/${plugin.pname}-${plugin.version}-${plugin.hash}.jar"
+                        ln -sf ${plugin} "${server.datadir}/data/plugins/${plugin.pname}-${plugin.version}-${plugin.hash}.jar"
                       '' + "\n"
                     ) server.plugins)}
 
                   ${mkConfigs server name}
 
                   # Launch ${server.package.pname} ${server.package.version}
-                  ${server.jre}/bin/java -jar ${server.package}/result ${builtins.toString (builtins.map (x: "\""+x+"\"") server.opts)}
+                  ${server.jre}/bin/java -jar ${server.package} ${builtins.toString (builtins.map (x: "\""+x+"\"") server.opts)}
                 '';
               };
             })

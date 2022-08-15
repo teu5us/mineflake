@@ -21,10 +21,7 @@ pkgs.stdenv.mkDerivation {
   dontUnpack = true;
   dontConfigure = true;
 
-  installPhase = ''
-    mkdir $out
-    install -Dm444 $src $out/result
-  '';
+  installPhase = "install -Dm444 $src $out";
 
   meta = with lib; {
     description = "CoreProtect is a blazing fast data logging and anti-griefing tool for Minecraft servers";
