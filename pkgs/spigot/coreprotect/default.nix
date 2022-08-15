@@ -32,5 +32,7 @@ pkgs.stdenv.mkDerivation {
     # TODO: find artistik license
     license = licenses.mit;
     platforms = platforms.all;
+    # TODO: fill
+    folders = [ ];
   };
 }

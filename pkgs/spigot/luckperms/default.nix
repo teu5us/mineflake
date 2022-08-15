@@ -40,5 +40,8 @@ pkgs.stdenv.mkDerivation {
     homepage = "https://luckperms.net/";
     license = licenses.mit;
     platforms = platforms.all;
+    folders = [
+      "plugins/LuckPerms"
+    ];
   };
 }
