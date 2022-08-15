@@ -56,14 +56,6 @@ with lib; let
         (attrNames ders))
     );
 
-  mkPermissionConfigs = permissions:
-    builtins.listToAttrs (map
-      (node: {
-        name = node;
-        value = getAttr key permissions;
-      })
-      (attrNames permissions));
-
   configSubmodule = types.submodule
     ({ ... }: {
       options = {
