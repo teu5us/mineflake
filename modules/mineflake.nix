@@ -155,6 +155,7 @@ with lib; let
 
         plugins = mkOption {
           type = types.listOf types.package;
+          default = [];
           description = "Plugins to install.";
         };
 
@@ -198,20 +199,21 @@ in
         };
         obj = builtins.mapAttrs
           (name: server:
-            # TODO: add permissions.enable handling
             let
-              configs = {
-                "plugins/LuckPerms/groups.yml" = {
-                  type = "yaml";
-                  data = server.permissions.groups;
-                };
-              } // {
-                "plugins/LuckPerms/users.yml" = {
-                  type = "yaml";
-                  data = server.permissions.users;
-                };
-              } // server.configs;
-              plugins = server.plugins;
+              configs = if server.permissions.enable then {
+                  "plugins/LuckPerms/groups.yml" = {
+                    type = "yaml";
+                    data = server.permissions.groups;
+                  };
+                } // {
+                  "plugins/LuckPerms/users.yml" = {
+                    type = "yaml";
+                    data = server.permissions.users;
+                  };
+                } else {} //
+              server.configs;
+              plugins = server.plugins ++
+                (if server.permissions.enable then [ server.permissions.package ] else []);
             in
             {
               name = "minecraft-${name}";
