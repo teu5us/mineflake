@@ -181,7 +181,7 @@ in
                       ''
                         # Link plugin ${plugin.pname} ${plugin.version}
                         ln -sf ${plugin} "${server.datadir}/data/plugins/${plugin.pname}-${plugin.version}-${plugin.hash}.jar"
-                      '' + "\n"
+                      ''
                     ) server.plugins)}
 
                   ${mkConfigs server name}
