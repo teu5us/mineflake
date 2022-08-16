@@ -144,7 +144,7 @@ with lib; let
       options = {
         datadir = mkOption {
           type = types.path;
-          default = "/vat/lib/minecraft/${name}";
+          default = "/var/lib/minecraft/${name}";
           description = "Server data directory.";
         };
 
