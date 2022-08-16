@@ -140,11 +140,11 @@ with lib; let
   };
 
   serverSubmodule = types.submodule
-    ({ ... }: {
+    ({ name, ... }: {
       options = {
         datadir = mkOption {
           type = types.path;
-          # TODO: add default value based on ${name}
+          default = "/vat/lib/minecraft/${name}";
           description = "Server data directory.";
         };
 
