@@ -3,48 +3,18 @@
 with lib; let
   cfg = config.minecraft;
 
-  mkConfigDerivation = name: server-name: option:
-    let
-      default = {
-        version = server-name;
-        phases = [ "buildPhase" "installPhase" ];
-        pname = "minecraft-config-${name}";
-        installPhase = "chmod 744 $out";
-      };
-    in
-    (
-      # yaml compatible with json format
-      if option.type == "yaml" || option.type == "json" then
-        pkgs.stdenv.mkDerivation
-          (default // {
-            # We use "bsHSCeMDDECFe1eo" string as a EOF marker, cause it harder to collision with
-            buildPhase = ''
-              cat <<bsHSCeMDDECFe1eo > $out
-              ${builtins.toJSON option.data}
-              bsHSCeMDDECFe1eo
-            '';
-          })
-      else if option.type == "raw" then
-        pkgs.stdenv.mkDerivation
-          (default // {
-            buildPhase = ''
-              cat <<bsHSCeMDDECFe1eo > $out
-              ${option.data.raw}
-              bsHSCeMDDECFe1eo
-            '';
-          })
-      else
-        pkgs.stdenv.mkDerivation (default // {
-          buildPhase = ''
-            cat <<bsHSCeMDDECFe1eo > $out
-            none
-            bsHSCeMDDECFe1eo
-          '';
-        })
-    );
+  mkConfigDerivation = option: (
+    # yaml compatible with json format
+    if option.type == "yaml" || option.type == "json" then
+      (builtins.toFile "config.${option.type}" (builtins.toJSON option.data))
+    else if option.type == "raw" then
+      (builtins.toFile "config.${option.type}" option.data.raw)
+    else
+      (builtins.toFile "none.txt" "none")
+  );
 
   mkConfigs = server: server-name: configs:
-    let ders = mapAttrs (name: option: mkConfigDerivation name server-name option) configs; in
+    let ders = mapAttrs (name: option: mkConfigDerivation option) configs; in
     (
       toString (map
         # TODO: replace env variables in config
@@ -204,7 +174,7 @@ in
   config = mkIf cfg.enable {
     systemd.services =
       let
-        eula_drv = mkConfigDerivation "eula.txt" "default" {
+        eula_drv = mkConfigDerivation {
           type = "raw";
           data = {
             raw = "eula=true";
