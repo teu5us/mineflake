@@ -1,14 +1,14 @@
-{ lib, pkgs, ... }:
+{ lib, stdenv, fetchzip, ... }:
 
 let
   hash = "sha256-IBRMSPaHYpL+DWOrjXaKKWBgd2MzSKxREDYqBcYPS3A=";
   url = "https://ipfs.io/ipfs/bafybeiev6yvkj7zswarulwhid4jyzawssrqjwnts4fvkjhfzpzjlq27odi/luckperms-spigot.tar.gz";
-  src = pkgs.fetchzip {
+  src = fetchzip {
     url = url;
     hash = hash;
   };
 in
-pkgs.stdenv.mkDerivation {
+stdenv.mkDerivation {
   inherit hash src;
 
   pname = "LuckPerms";

@@ -3,6 +3,8 @@
 with lib; let
   cfg = config.minecraft;
 
+  spigot = pkgs.callPackage ../pkgs/spigot { };
+
   mkConfigDerivation = option: (
     # yaml compatible with json format
     if option.type == "yaml" || option.type == "json" then
@@ -10,7 +12,7 @@ with lib; let
     else if option.type == "raw" then
       (builtins.toFile "config.${option.type}" option.data.raw)
     else
-      (builtins.toFile "none.txt" "none")
+      (builtins.toFile "none.txt" "Impossible")
   );
 
   mkConfigs = server: server-name: configs:
@@ -20,7 +22,7 @@ with lib; let
         # TODO: replace env variables in config
         # substitute \$\{server.envfile\} \$\{server.datadir\}/data/\$\{ke0\y}
         (key: ''
-          echo 'Link "${key}" config file'
+          echo 'Create "${key}" config file'
           rm -f "${server.datadir}/data/${key}"
           cp "${getAttr key ders}" "${server.datadir}/data/${key}"
           chmod 440 "${server.datadir}/data/${key}"
@@ -33,21 +35,21 @@ with lib; let
       inherit type data;
     };
 
+  getName = package: "${package.pname}-${package.version}";
+
   linkComplex = package: base:
-    "echo 'Link ${package.pname}-${package.version} complex struct...'\n" +
     concatStringsSep "\n" (
       map
         (key: ''
-          echo 'Link "${key}"'
+          echo 'Link "${key}" for ${getName package}'
           rm -f "${base}/${key}"
           ln -sf "${package}/${getAttr key package.meta.struct}" "${base}/${key}"'')
-        (attrNames package.meta.struct)
-    );
+        (attrNames package.meta.struct));
 
   linkResult = package: base: ext:
     ''
-      echo "Link ${package.pname}-${package.version} result"
-      ln -sf "${package}" "${base}/${package.pname}-${package.version}${ext}"
+      echo "Link ${getName package} result"
+      ln -sf "${package}" "${base}/${getName package}${ext}"
     '';
 
 
@@ -100,7 +102,7 @@ with lib; let
 
         package = mkOption {
           type = types.package;
-          default = pkgs.callPackage ../pkgs/spigot/luckperms { };
+          default = spigot.luckperms;
           example = "pkgs.spigot.luckperms";
           description = "Plugin package.";
         };
@@ -150,7 +152,7 @@ with lib; let
 
         package = mkOption {
           type = types.package;
-          default = pkgs.callPackage ../pkgs/spigot/paper { };
+          default = spigot.paper;
           example = "pkgs.spigot.paper";
           description = "Server package.";
         };
@@ -188,6 +190,7 @@ in
                   "plugins/LuckPerms/groups.yml" = mkConfig "yaml" server.permissions.groups;
                   "plugins/LuckPerms/users.yml" = mkConfig "yaml" server.permissions.users;
                 } else { }) //
+                # Disable metrics
                 ({
                   "plugins/bStats/config.yml" = mkConfig "yaml" {
                     enabled = false;
@@ -230,7 +233,7 @@ in
                            "${server.datadir}/data/world_nether" "${server.datadir}/data/world_the_end" \
                            "${server.datadir}/data/plugins/bStats"
 
-                  echo "Create directories for core ${server.package.pname}-${server.package.version}..."
+                  echo "Create directories for core ${getName server.package}..."
                   ${if length server.package.meta.folders >= 1 then
                     ''mkdir -p ${toString (map (folder: "\"" + server.datadir + "/data/" + folder + "\"") server.package.meta.folders)}'' else ""}
 
@@ -238,7 +241,7 @@ in
                     plugin:
                       if length plugin.meta.folders >= 1 then
                       ''
-                        echo "Create directories for ${plugin.pname}-${plugin.version}..."
+                        echo "Create directories for ${getName plugin}..."
                         mkdir -p ${toString (map (folder: "\"" + server.datadir + "/data/" + folder + "\"") plugin.meta.folders)}
                       '' else ""
                     ) plugins)}
@@ -257,19 +260,18 @@ in
                     plugin: if plugin.meta.type == "result" then
                       (linkResult plugin (server.datadir + "/data/plugins") ".jar")
                       else if plugin.meta.type == "complex" then
-                      (linkComplex plugin (server.datadir + "/data")) +
-                      ''ln -sf "${plugin}/result" "${server.datadir}/data/plugins/${plugin.pname}-${plugin.version}.jar"'' + "\n\n"
-                      else "echo 'Unsupported ${plugin.pname}-${plugin.version} plugin type ${plugin.meta.type}!'") plugins)}
+                      (linkComplex plugin (server.datadir + "/data")) + "\n" +
+                      ''ln -sf "${plugin}/result" "${server.datadir}/data/plugins/${getName plugin}.jar"'' + "\n"
+                      else "echo 'Unsupported ${getName plugin} plugin type ${plugin.meta.type}!'") plugins)}
+                  ${if (server.package.meta.type == "complex") then
+                    (linkComplex server.package (server.datadir + "/data"))
+                    else ""}
 
                   ${mkConfigs server name configs}
 
                   echo "Link server core for easier debug and local launch..."
                   rm -f "${server.datadir}/data/server-*.jar"
-                  ln -sf "${server.package}/result" "${server.datadir}/data/server-${server.package.pname}-${server.package.version}.jar"
-
-                  ${if (server.package.meta.type == "complex") then
-                    (linkComplex server.package (server.datadir + "/data"))
-                    else ""}
+                  ln -sf "${server.package}/result" "${server.datadir}/data/server-${getName server.package}.jar"
                 '';
                 script = ''
                   # Generated by mineflake. Do not edit this file.
@@ -278,11 +280,11 @@ in
                   cd "${server.datadir}/data"
 
                   echo "Hello from mineflake!"
-                  echo "Core: ${server.package.pname}-${server.package.version}"
+                  echo "Core: ${getName server.package}"
                   echo "Opts: ${builtins.toString (builtins.map (x: "'"+x+"'") server.opts)}"
                   echo "Plugins: ${builtins.toString (builtins.map (x: "'"+x.pname+"-"+x.version+"'") plugins)}"
 
-                  echo "Launch ${server.package.pname}-${server.package.version} for ${name} server..."
+                  echo "Launch ${getName server.package} for ${name} server..."
                   ${server.jre}/bin/java -jar ${server.package}/result ${builtins.toString (builtins.map (x: "\""+x+"\"") server.opts)}
                 '';
               };

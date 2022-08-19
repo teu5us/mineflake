@@ -1,15 +1,15 @@
-{ lib, pkgs, ... }:
+{ lib, stdenv, fetchurl, ... }:
 
 let
   hash = "sha256-BPMbYJ0ePhxT6ZqqBsoQ6mvfUXLJS/WvjM8QiwvEuXc=";
   version = "21.2";
   url = "https://github.com/PlayPro/CoreProtect/releases/download/v${version}/CoreProtect-${version}.jar";
 in
-pkgs.stdenv.mkDerivation {
+stdenv.mkDerivation {
   inherit hash version;
 
   pname = "CoreProtect";
-  src = pkgs.fetchurl {
+  src = fetchurl {
     url = url;
     hash = hash;
   };

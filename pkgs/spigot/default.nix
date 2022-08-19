@@ -2,10 +2,9 @@
 
 with pkgs; {
   # Servers
-  paper = callPackage ./paper { };
+  paper = callPackage ./servers/paper { };
 
   # Plugins
-  # TODO: add to plugins default config declarations
-  luckperms = callPackage ./luckperms { };
-  coreprotect = callPackage ./coreprotect { };
+  luckperms = callPackage ./plugins/luckperms { };
+  coreprotect = callPackage ./plugins/coreprotect { };
 }

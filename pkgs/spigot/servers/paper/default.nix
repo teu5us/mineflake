@@ -1,20 +1,20 @@
-{ lib, pkgs, ... }:
+{ lib, fetchurl, stdenv, ... }:
 
 let
   mcVersion = "1.18.2";
   buildNum = "313";
   hash = "sha256-wotk0Pu1wKomj83nMCyzzPZ+Y9RkQUbfeWjRGaSt7lE=";
-  mojang_dep = pkgs.fetchurl {
+  mojang_dep = fetchurl {
     url = "https://ipfs.io/ipfs/bafybeidd64amhqeqkrtm6udjyhlu7lero7fakzeunqha7oywwibeogluqq/mojang_1.18.2.jar";
     hash = "sha256-V76dHjWqkc/fokattjoOoRqUYIHgRk0IvD02ZRcYo0M=";
   };
 in
-pkgs.stdenv.mkDerivation {
+stdenv.mkDerivation {
   inherit hash;
 
   pname = "paper";
   version = "${mcVersion}r${buildNum}";
-  src = pkgs.fetchurl {
+  src = fetchurl {
     url = "https://papermc.io/api/v2/projects/paper/versions/${mcVersion}/builds/${buildNum}/downloads/paper-${mcVersion}-${buildNum}.jar";
     hash = hash;
   };
