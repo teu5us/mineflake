@@ -5,7 +5,7 @@ with lib; let
 
   spigot = pkgs.callPackage ../pkgs/spigot { };
 
-  mkConfigDerivation = option: (
+  mkConfigFile = option: (
     # yaml compatible with json format
     if option.type == "yaml" || option.type == "json" then
       (builtins.toFile "config.${option.type}" (builtins.toJSON option.data))
@@ -16,24 +16,21 @@ with lib; let
   );
 
   mkConfigs = server: server-name: configs:
-    let ders = mapAttrs (name: option: mkConfigDerivation option) configs; in
+    let ders = mapAttrs (name: option: mkConfigFile option) configs; in
     (
       concatStringsSep "\n" (map
         # TODO: replace env variables in config
-        # substitute \$\{server.envfile\} \$\{server.datadir\}/data/\$\{ke0\y}
+        # substitute ${server.envfile} ${server.datadir}/${key}
         (key: ''
           echo 'Create "${key}" config file'
-          rm -f "${server.datadir}/data/${key}"
-          cp "${getAttr key ders}" "${server.datadir}/data/${key}"
-          chmod 440 "${server.datadir}/data/${key}"
+          rm -f "${server.datadir}/${key}"
+          cp "${getAttr key ders}" "${server.datadir}/${key}"
+          chmod 440 "${server.datadir}/${key}"
         '')
         (attrNames ders))
     );
 
-  mkConfig = type: data:
-    {
-      inherit type data;
-    };
+  mkConfig = type: data: { inherit type data; };
 
   getName = package: "${package.pname}-${package.version}";
 
@@ -52,6 +49,14 @@ with lib; let
       ln -sf "${package}" "${base}/${getName package}${ext}"
     '';
 
+  boolToString = val: if val then "true" else "false";
+
+  # {some=data; foo=bar} -> [data bar]
+  attrValsToList = attrs: map (key: getAttr key attrs) (attrNames attrs);
+
+  attrListToAttr = list: builtins.listToAttrs (attrValsToList list);
+
+  # OPTIONS
 
   configSubmodule = types.submodule
     ({ ... }: {
@@ -92,12 +97,10 @@ with lib; let
 
         groups = mkOption {
           type = types.attrsOf permissionGroup;
-          default = { };
         };
 
         users = mkOption {
           type = types.attrsOf permissionGroup;
-          default = { };
         };
 
         package = mkOption {
@@ -111,12 +114,116 @@ with lib; let
     description = "Config submodule";
   };
 
+  rconSubmodule = types.submodule
+    ({ ... }: {
+      options = {
+        enable = mkEnableOption "Enable rcon";
+
+        port = mkOption {
+          type = types.port;
+          default = 25575;
+          description = "rcon port.";
+        };
+
+        password = mkOption {
+          type = types.string;
+          default = "";
+          description = "rcon password.";
+        };
+
+        broadcast-to-ops = mkEnableOption "broadcast-rcon-to-ops";
+      };
+    });
+
+  querySubmodule = types.submodule
+    ({ ... }: {
+      options = {
+        enable = mkEnableOption "Enable query";
+
+        port = mkOption {
+          type = types.port;
+          default = 25565;
+          description = "query port.";
+        };
+      };
+    });
+
+  propertiesSubmodule = types.submodule
+    ({ ... }: {
+      options = {
+        rcon = mkOption {
+          type = rconSubmodule;
+          default = { };
+          description = "Server rcon settings.";
+        };
+
+        query = mkOption {
+          type = rconSubmodule;
+          default = { };
+          description = "Server query settings.";
+        };
+
+        seed = mkOption {
+          type = types.string;
+          default = "";
+          description = "Server seed.";
+        };
+
+        motd = mkOption {
+          type = types.string;
+          default = "";
+          description = "Server motd.";
+        };
+
+        gamemode = mkOption {
+          type = types.enum [ "survival" "creative" "spectator" ];
+          default = "survival";
+          description = "Server seed.";
+        };
+
+        difficulty = mkOption {
+          # TODO: fill
+          type = types.enum [ "easy" "hard" ];
+          default = "survival";
+          description = "Server seed.";
+        };
+
+        max-world-size = mkOption {
+          type = types.int;
+          default = "";
+          description = "fill.";
+        };
+
+        online-mode = mkEnableOption "online-mode";
+
+        enable-command-block = mkEnableOption "enable-command-block";
+
+        enable-query = mkEnableOption "enable-query";
+
+        pvp = mkEnableOption "pvp";
+
+        allow-flight = mkEnableOption "fill";
+
+        spawn-animals = mkOption {
+          type = types.bool;
+          default = true;
+          description = "fill.";
+        };
+
+        spawn-monsters = mkOption {
+          type = types.bool;
+          default = true;
+          description = "fill.";
+        };
+      };
+    });
+
   serverSubmodule = types.submodule
     ({ name, ... }: {
       options = {
         datadir = mkOption {
           type = types.path;
-          default = "/var/lib/minecraft/${name}";
+          default = "/var/lib/mineflake-${name}";
           description = "Server data directory.";
         };
 
@@ -136,6 +243,12 @@ with lib; let
           type = permissionSubmodule;
           default = { };
           description = "Permissions (LP) settings.";
+        };
+
+        properties = mkOption {
+          type = propertiesSubmodule;
+          default = { };
+          description = "Server settings.";
         };
 
         jre = mkOption {
@@ -176,7 +289,7 @@ in
   config = mkIf cfg.enable {
     systemd.services =
       let
-        eula_drv = mkConfigDerivation {
+        eula_drv = mkConfigFile {
           type = "raw";
           data = {
             raw = "eula=true";
@@ -207,77 +320,73 @@ in
                 (flatten (map (x: x.meta.deps) pre_plugins)));
             in
             {
-              name = "minecraft-${name}";
+              name = "mineflake-${name}";
               value = {
                 restartIfChanged = true;
                 wantedBy = [ "multi-user.target" ];
-                wants = [ "minecraft-${name}-prepare.service" "network-online.target" ];
-                after = [ "minecraft-${name}-prepare.service" "network-online.target" ];
+                wants = [ "network-online.target" ];
+                after = [ "network-online.target" ];
                 description = "${name} mineflake server configuration.";
                 serviceConfig = {
                   Type = "simple";
-                  ProtectHome = true;
-                  ProtectSystem = true;
-                  # TODO: rootless
-                  # User = "minecraft-${name}";
-                  # Group = "minecraft-${name}";
-                  User = "root";
-                  SyslogIdentifier = "minecraft-${name}";
-                  WorkingDirectory = "${server.datadir}/data";
+                  User = "mineflake-${name}";
+                  Group = "mineflake-${name}";
+                  SyslogIdentifier = "mineflake-${name}";
+                  WorkingDirectory = "${server.datadir}";
                 };
                 preStart = ''
                   # Generated by mineflake. Do not edit this file.
 
                   echo "Create required directories..."
-                  mkdir -p "${server.datadir}/data/plugins" "${server.datadir}/data/world" \
-                           "${server.datadir}/data/world_nether" "${server.datadir}/data/world_the_end" \
-                           "${server.datadir}/data/plugins/bStats"
+                  mkdir -p "${server.datadir}/plugins" "${server.datadir}/world" \
+                           "${server.datadir}/world_nether" "${server.datadir}/world_the_end" \
+                           "${server.datadir}/plugins/bStats"
 
                   echo "Create directories for core ${getName server.package}..."
                   ${if length server.package.meta.folders >= 1 then
-                    ''mkdir -p ${toString (map (folder: "\"" + server.datadir + "/data/" + folder + "\"") server.package.meta.folders)}'' else ""}
+                    ''mkdir -p ${toString (map (folder: "\"" + server.datadir + "/" + folder + "\"") server.package.meta.folders)}'' else ""}
 
                   ${concatStringsSep "\n" (map (
                     plugin:
                       if length plugin.meta.folders >= 1 then
                       ''
                         echo "Create directories for ${getName plugin}..."
-                        mkdir -p ${toString (map (folder: "\"" + server.datadir + "/data/" + folder + "\"") plugin.meta.folders)}
+                        mkdir -p ${toString (map (folder: "\"" + server.datadir + "/" + folder + "\"") plugin.meta.folders)}
                       '' else ""
                     ) plugins)}
 
                   echo "Change directory to server data..."
-                  cd "${server.datadir}/data"
+                  cd "${server.datadir}/"
 
                   echo "eula.txt generation..."
-                  rm -f "${server.datadir}/data/eula.txt"
-                  ln -sf "${eula_drv}" "${server.datadir}/data/eula.txt"
+                  rm -f "${server.datadir}/eula.txt"
+                  ln -sf "${eula_drv}" "${server.datadir}/eula.txt"
 
                   echo "Remove old plugin symlinks..."
-                  rm -rf "${server.datadir}/data/plugins/*.jar"
+                  rm -rf "${server.datadir}/plugins/*.jar"
 
                   ${concatStringsSep "\n" (map (
                     plugin: if plugin.meta.type == "result" then
-                      (linkResult plugin (server.datadir + "/data/plugins") ".jar")
+                      (linkResult plugin (server.datadir + "/plugins") ".jar")
                       else if plugin.meta.type == "complex" then
-                      (linkComplex plugin (server.datadir + "/data")) + "\n" +
-                      ''ln -sf "${plugin}/result" "${server.datadir}/data/plugins/${getName plugin}.jar"'' + "\n"
+                      (linkComplex plugin (server.datadir)) + "\n" +
+                      ''ln -sf "${plugin}/result" "${server.datadir}/plugins/${getName plugin}.jar"'' + "\n"
                       else "echo 'Unsupported ${getName plugin} plugin type ${plugin.meta.type}!'") plugins)}
                   ${if (server.package.meta.type == "complex") then
-                    (linkComplex server.package (server.datadir + "/data"))
+                    (linkComplex server.package (server.datadir))
                     else ""}
 
                   ${mkConfigs server name configs}
 
                   echo "Link server core for easier debug and local launch..."
-                  rm -f "${server.datadir}/data/server-*.jar"
-                  ln -sf "${server.package}/result" "${server.datadir}/data/server-${getName server.package}.jar"
+                  rm -f "${server.datadir}/server-*.jar"
+                  ln -sf "${server.package}/result" "${server.datadir}/server-${getName server.package}.jar"
                 '';
                 script = ''
                   # Generated by mineflake. Do not edit this file.
 
                   echo 'Change directory to server data'
-                  cd "${server.datadir}/data"
+                  cd "${server.datadir}"
 
                   echo "Hello from mineflake!"
                   echo "Core: ${getName server.package}"
@@ -290,68 +399,37 @@ in
               };
             })
           cfg.servers;
-        obj_prepare = builtins.mapAttrs
-          (name: server:
-            {
-              name = "minecraft-${name}-prepare";
-              value = {
-                wantedBy = [ "multi-user.target" ];
-                wants = [ "network-online.target" ];
-                after = [ "network-online.target" ];
-                description = "Prepare ${name} server folder.";
-                serviceConfig = {
-                  User = "root";
-                  Type = "oneshot";
-                  RemainAfterExit = "yes";
-                  SyslogIdentifier = "minecraft-${name}-prepare";
-                };
-                script = ''
-                  # Generated by mineflake. Do not edit this file.
-
-                  echo 'Create base dir'
-                  mkdir -p "${server.datadir}/data"
-
-                  echo 'Give rights to folder'
-                  chown -R minecraft-${name}:minecraft-${name} "${server.datadir}"
-                  chmod -R 760 "${server.datadir}"
-                '';
-              };
-            })
-          cfg.servers;
       in
-      builtins.listToAttrs (map (key: getAttr key obj) (attrNames obj)) // builtins.listToAttrs (map (key: getAttr key obj_prepare) (attrNames obj_prepare));
+      attrListToAttr obj;
 
     users.users =
       let
         obj = builtins.mapAttrs
           (name: server:
             {
-              name = "minecraft-${name}";
+              name = "mineflake-${name}";
               value = {
                 createHome = true;
                 isSystemUser = true;
                 home = server.datadir;
-                group = "minecraft-${name}";
+                group = "mineflake-${name}";
                 description = "System account that runs ${name} mineflake server configuration.";
               };
             })
           cfg.servers;
       in
-      builtins.listToAttrs (map (key: getAttr key obj) (attrNames obj));
+      attrListToAttr obj;
 
     users.groups =
       let
         obj = builtins.mapAttrs
           (name: server:
             {
-              name = "minecraft-${name}";
-              value = {
-                name = "minecraft-${name}";
-                members = [ "minecraft-${name}" ];
-              };
+              name = "mineflake-${name}";
+              value = { };
             })
           cfg.servers;
       in
-      builtins.listToAttrs (map (key: getAttr key obj) (attrNames obj));
+      attrListToAttr obj;
   };
 }
