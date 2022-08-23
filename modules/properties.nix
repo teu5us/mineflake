@@ -1,5 +1,5 @@
 { lib
-, utils ? import ./utils.nix { }
+, utils ? import ./utils.nix { inherit lib; }
 , ...
 }:
 

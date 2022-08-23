@@ -1,8 +1,8 @@
 { lib
 , pkgs
 , config
-, utils ? import ./utils.nix { }
-, properties ? import ./properties.nix { }
+, utils ? import ./utils.nix { inherit lib; }
+, properties ? import ./properties.nix { inherit lib; }
 , ...
 }:
 
