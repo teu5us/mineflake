@@ -1,7 +1,4 @@
-{ lib
-# , utils ? import ./utils.nix { inherit lib; }
-, ...
-}:
+{ lib , ... }:
 
 let
   utils = import ./utils.nix { inherit lib; };
