@@ -1,12 +1,16 @@
 { lib
 , pkgs
 , config
-, utils ? import ./utils.nix { inherit lib; }
-, properties ? import ./properties.nix { inherit lib; }
+# , utils ? import ./utils.nix { inherit lib; }
+# , properties ? import ./properties.nix { inherit lib; }
 , ...
 }:
 
 with lib; let
+
+  utils = import ./utils.nix { inherit lib; };
+  properties = import ./properties.nix { inherit lib; };
+
   cfg = config.minecraft;
 
   spigot = pkgs.callPackage ../pkgs/spigot { };

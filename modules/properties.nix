@@ -1,8 +1,11 @@
 { lib
-, utils ? import ./utils.nix { inherit lib; }
+# , utils ? import ./utils.nix { inherit lib; }
 , ...
 }:
 
+let
+  utils = import ./utils.nix { inherit lib; };
+in
 with lib; {
   submodule = types.attrs;
 
