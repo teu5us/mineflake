@@ -1,6 +1,6 @@
-{ ... }:
+{ lib, ... }:
 
-let
+with lib; let
   mkConfigFile = option: (
     # yaml compatible with json format
     if option.type == "yaml" || option.type == "json" then
@@ -13,8 +13,7 @@ let
 
   # {some=data; foo=bar} -> [data bar]
   attrValsToList = attrs: map (key: getAttr key attrs) (attrNames attrs);
-in
-{
+in {
   inherit mkConfigFile attrValsToList;
 
   mkConfigs = server: server-name: configs:
@@ -55,5 +54,6 @@ in
 
   boolToString = val: if val then "true" else "false";
 
+  # { some = { name = "foo"; value = "bar"; }; } -> { "foo" = "bar"; }
   attrListToAttr = list: builtins.listToAttrs (attrValsToList list);
 }
