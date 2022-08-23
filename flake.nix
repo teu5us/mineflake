@@ -5,10 +5,9 @@
 
   outputs = { self, nixpkgs }:
     {
-      nixosModules.mineflake = import ./modules/mineflake.nix;
-      nixosModule = self.nixosModules.mineflake;
+      nixosModules.default = import ./modules/mineflake.nix;
 
-      overlay = final: prev: {
+      overlays.default = final: prev: {
         spigot = import ./pkgs/spigot {
           pkgs = prev;
           lib = prev.lib;
