@@ -10,9 +10,6 @@ with lib; let
     else
       (builtins.toFile "none.txt" "Impossible")
   );
-
-  # {some=data; foo=bar} -> [data bar]
-  attrValsToList = attrs: map (key: getAttr key attrs) (attrNames attrs);
 in {
   inherit mkConfigFile attrValsToList;
 
@@ -53,7 +50,4 @@ in {
     '';
 
   boolToString = val: if val then "true" else "false";
-
-  # { some = { name = "foo"; value = "bar"; }; } -> { "foo" = "bar"; }
-  attrListToAttr = list: builtins.listToAttrs (attrValsToList list);
 }

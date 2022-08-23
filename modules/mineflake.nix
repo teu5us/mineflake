@@ -38,7 +38,7 @@ in
     enable = mkEnableOption "If enabled, Nix-defined minecraft servers will be created from minecraft.servers.";
 
     servers = mkOption {
-      type = types.attrsOf types.submodule
+      type = types.attrsOf (types.submodule
         ({ name, ... }: {
           options = {
             datadir = mkOption {
@@ -54,7 +54,7 @@ in
             };
 
             configs = mkOption {
-              type = types.attrsOf types.submodule
+              type = types.attrsOf (types.submodule
                 ({ ... }: {
                   options = {
                     type = mkOption {
@@ -68,13 +68,13 @@ in
                       description = "Config contents.";
                     };
                   };
-                });
+                }));
               default = { };
               description = "Config derivations.";
             };
 
             permissions = mkOption {
-              type = types.submodule
+              type = (types.submodule
                 ({ ... }: {
                   options = {
                     enable = mkEnableOption "If enabled, Nix-defined minecraft servers will be created from minecraft.servers.";
@@ -94,7 +94,7 @@ in
                       description = "Plugin package.";
                     };
                   };
-                });
+                }));
               default = { };
               description = "Permissions (LP) settings.";
             };
@@ -124,7 +124,7 @@ in
               description = "Server package.";
             };
           };
-        });
+        }));
       description = ''
         List of server submodules to create.
       '';
@@ -248,6 +248,6 @@ in
             };
           })
         cfg.servers; in
-    utils.attrListToAttr server-containers
+    builtins.listToAttrs (map (key: getAttr key server-containers) (attrNames server-containers))
   );
 }
