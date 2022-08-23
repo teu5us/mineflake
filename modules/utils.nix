@@ -10,8 +10,9 @@ with lib; let
     else
       (builtins.toFile "none.txt" "Impossible")
   );
+  mkConfig = type: data: { inherit type data; };
 in {
-  inherit mkConfigFile attrValsToList;
+  inherit mkConfigFile mkConfig attrValsToList;
 
   mkConfigs = server: server-name: configs:
     let ders = mapAttrs (name: option: mkConfigFile option) configs; in
@@ -27,8 +28,6 @@ in {
         '')
         (attrNames ders))
     );
-
-  mkConfig = type: data: { inherit type data; };
 
   mkRawConfig = text: mkConfig "raw" { raw = text; };
 
